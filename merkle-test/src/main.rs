@@ -9,7 +9,6 @@ struct Sample {
     label: &'static str,
 }
 
-/*
 #[derive(Debug, MerkleTree)]
 enum SampleEnum {
     Number(u32),
@@ -17,7 +16,6 @@ enum SampleEnum {
     Empty,
     Named { id: u32, label: &'static str },
 }
-*/
 
 macro_rules! dump_merkle_hash {
     ($val:expr) => {
@@ -42,7 +40,6 @@ pub fn main() {
         id: 123,
         label: "hello",
     });
-    /*
     dump_merkle_hash!(SampleEnum::Number(100));
     dump_merkle_hash!(SampleEnum::String("hello"));
     dump_merkle_hash!(SampleEnum::Empty);
@@ -50,5 +47,4 @@ pub fn main() {
         id: 123,
         label: "hello",
     });
-*/
 }

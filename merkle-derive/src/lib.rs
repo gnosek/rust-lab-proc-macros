@@ -1,4 +1,5 @@
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Field, Fields};
 
@@ -222,7 +223,6 @@ pub fn derive_merkle_tree(item: TokenStream) -> TokenStream {
             */
 
             let variant_hashes = e.variants.iter().map(|v| {
-                todo!();
                 /*
                 For each enum variant we need to:
 
@@ -234,7 +234,14 @@ pub fn derive_merkle_tree(item: TokenStream) -> TokenStream {
 
                 (the Span type comes from the proc_macros2 crate)
                 */
-                let field_names = map_fields_with_ids(&v.fields, |id, field| todo!());
+                let field_names = map_fields_with_ids(&v.fields, |id, field| {
+                    if let Some(ref name) = field.ident {
+                        quote!(#name)
+                    } else {
+                        let name = syn::Ident::new(format!("f{}", id).as_str(), Span::call_site());
+                        quote!(#name)
+                    }
+                });
 
                 /*
                 2. Generate the match pattern. Depending on the enum type (variant of v.fields),
@@ -247,16 +254,22 @@ pub fn derive_merkle_tree(item: TokenStream) -> TokenStream {
                           To add a comma between the elements, put it just before the final `*`:
                           `#(#foo),*`
                 */
+                let ident = &v.ident;
                 let pattern = match v.fields {
-                    Fields::Named(_) => todo!(),
-                    Fields::Unnamed(_) => todo!(),
-                    Fields::Unit => todo!(),
+                    Fields::Named(_) => quote!(Self::#ident { #(#field_names),* }),
+                    Fields::Unnamed(_) => quote!(Self::#ident ( #(#field_names),* )),
+                    Fields::Unit => quote!(Self::#ident),
                 };
 
                 /*
                 3. Generate the match arm code, which is basically `<pattern> => { <hash each field in turn> }`
                 */
-                quote!(/* todo */)
+                let field_hashes = hash_fields(&field_names);
+                quote!(
+                    #pattern => {
+                        #(#field_hashes)*
+                    }
+                )
             });
 
             impl_merkle_tree(
