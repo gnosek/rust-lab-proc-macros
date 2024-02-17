@@ -1,15 +1,18 @@
 use merkle::MerkleTree;
-// use merkle_derive::MerkleTree;
+use merkle_derive::MerkleTree;
 use pretty_hex::PrettyHex;
 use sha2::Digest;
 
-/*
 #[derive(Debug, MerkleTree)]
 struct Sample {
     id: u32,
     label: &'static str,
 }
 
+#[derive(Debug, MerkleTree)]
+struct SampleTuple(u32, &'static str);
+
+/*
 #[derive(Debug, MerkleTree)]
 enum SampleEnum {
     Number(u32),
@@ -18,6 +21,7 @@ enum SampleEnum {
     Named { id: u32, label: &'static str },
 }
 */
+
 macro_rules! dump_merkle_hash {
     ($val:expr) => {
         let val = $val;
@@ -37,11 +41,12 @@ pub fn main() {
     dump_merkle_hash!(100i64);
     dump_merkle_hash!(100u128);
     dump_merkle_hash!(100i128);
-    /*
     dump_merkle_hash!(Sample {
         id: 123,
         label: "hello",
     });
+    dump_merkle_hash!(SampleTuple(123, "hello"));
+    /*
     dump_merkle_hash!(SampleEnum::Number(100));
     dump_merkle_hash!(SampleEnum::String("hello"));
     dump_merkle_hash!(SampleEnum::Empty);
@@ -49,5 +54,5 @@ pub fn main() {
         id: 123,
         label: "hello",
     });
-*/
+    */
 }
