@@ -28,7 +28,6 @@ macro_rules! dump_merkle_hash {
 
 pub fn main() {
     dump_merkle_hash!(100u8);
-/*
     dump_merkle_hash!(100i8);
     dump_merkle_hash!(100u16);
     dump_merkle_hash!(100i16);
@@ -38,6 +37,7 @@ pub fn main() {
     dump_merkle_hash!(100i64);
     dump_merkle_hash!(100u128);
     dump_merkle_hash!(100i128);
+    /*
     dump_merkle_hash!(Sample {
         id: 123,
         label: "hello",
