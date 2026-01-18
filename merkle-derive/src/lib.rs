@@ -200,9 +200,13 @@ pub fn derive_merkle_tree(item: TokenStream) -> TokenStream {
                           `#(#foo),*`
                 */
                 let field_names_with_idents =
-                    with_idents(v.fields.members()).map(|(member, ident)| todo!());
+                    with_idents(v.fields.members()).map(|(member, ident)| {
+                        quote!(
+                            #member: #ident
+                        )
+                    });
                 let variant_ident = &v.ident;
-                let pattern = todo!();
+                let pattern = quote!(Self::#variant_ident { #(#field_names_with_idents),* });
 
                 /*
                 2. Generate the match arm code, which is basically `<pattern> => { <hash each field in turn> }`
@@ -210,10 +214,21 @@ pub fn derive_merkle_tree(item: TokenStream) -> TokenStream {
                 Note that the fields are bound to f0, f1, etc., so we need to use those names again.
                 */
                 let names = idents_for(v.fields.members());
-                todo!()
+                quote!(
+                    #pattern => {
+                        #(full_hash.update(#names.merkle().finalize());)*
+                    }
+                )
             });
 
-            impl_merkle_tree(&input.ident, todo!())
+            impl_merkle_tree(
+                &input.ident,
+                quote!(
+                    match self {
+                        #(#variant_hashes)*
+                    }
+                ),
+            )
         }
         Data::Union(_) => TokenStream::from(
             syn::Error::new(input.ident.span(), "Cannot derive MerkleTree for a union")
