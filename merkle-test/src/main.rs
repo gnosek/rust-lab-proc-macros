@@ -20,6 +20,13 @@ enum SampleEnum {
     Named { id: u32, label: &'static str },
 }
 
+#[allow(unused)]
+#[derive(Debug)]
+struct NoMerkleTreeImpl;
+
+#[derive(Debug, MerkleTree)]
+struct NewtypeWrapper<T>(T);
+
 macro_rules! dump_merkle_hash {
     ($val:expr) => {
         let val = $val;
@@ -51,4 +58,6 @@ pub fn main() {
         id: 123,
         label: "hello",
     });
+    dump_merkle_hash!(NewtypeWrapper(100u8));
+    // dump_merkle_hash!(NewtypeWrapper(NoMerkleTreeImpl));
 }

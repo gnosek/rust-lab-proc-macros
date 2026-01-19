@@ -8,9 +8,57 @@ This function generates the outer `impl` block for our trait and returns the fin
 to the compiler. Usually it's best to convert to proc_macro::TokenStream as late as possible,
 and this is the outermost layer in our code generation.
 */
-fn impl_merkle_tree(ty: &syn::Ident, hash_updates: proc_macro2::TokenStream) -> TokenStream {
+fn impl_merkle_tree(item: &DeriveInput, hash_updates: proc_macro2::TokenStream) -> TokenStream {
+    let ty = &item.ident;
+
+    /*
+    Support for generic types
+
+    Our trait delegates hashing of individual fields to the `MerkleTree` trait, so we need to ensure
+    that all types used in the struct implement the `MerkleTree` trait. The simplest way to do this
+    is to add the corresponding `where` clauses to the generated `impl` block, for example:
+
+    struct Pair<T, U>(T, U);
+
+    impl<T: MerkleTree, U: MerkleTree> MerkleTree for Pair<T, U> { ... }
+
+    Note that this is equivalent to a `where` clause:
+
+    impl<T, U> MerkleTree for Pair<T, U> where T: MerkleTree, U: MerkleTree { ... }
+
+    and this second form is how the `syn` crate represents generic bounds.
+    */
+
+    /*
+    We still need to propagate any bounds on the type itself, so we start by creating a copy
+    of the original generics and adding a `where` clause to it (if there isn't one already).
+     */
+    let mut generics = item.generics.clone();
+    let where_clause = generics.make_where_clause();
+
+    /*
+    Now, for each type parameter (skipping lifetime parameters and const generics) in the original
+    generics, we add a bound to the where clause.
+
+    We need to provide a `WherePredicate` object that describes the `T: MerkleTree` bound.
+    When constructing `syn` objects, it's often easiest to use the `parse_quote!` macro, which
+    renders a template and then parses it back into the desired type.
+    */
+    for ty in item.generics.type_params() {
+        where_clause
+            .predicates
+            .push(syn::parse_quote!(#ty: ::merkle::MerkleTree));
+    }
+
+    /*
+    Finally, split our modified generics into the three parts needed for the `impl` block:
+    - `impl_generics`: generic parameters for the `impl` block
+    - `ty_generics`: generic parameters for the type
+    - `where_clause`: the `where` clause (if any)
+    */
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     TokenStream::from(quote!(
-        impl ::merkle::MerkleTree for #ty {
+        impl #impl_generics ::merkle::MerkleTree for #ty #ty_generics #where_clause {
             fn merkle(&self) -> ::sha2::Sha256 {
                 use ::merkle::MerkleTree;
                 let mut full_hash = ::sha2::Sha256::default();
@@ -94,7 +142,7 @@ pub fn derive_merkle_tree(item: TokenStream) -> TokenStream {
                 }
             }
             */
-            impl_merkle_tree(&input.ident, field_hashes)
+            impl_merkle_tree(&input, field_hashes)
         }
         Data::Enum(e) => {
             /*
@@ -222,7 +270,7 @@ pub fn derive_merkle_tree(item: TokenStream) -> TokenStream {
             });
 
             impl_merkle_tree(
-                &input.ident,
+                &input,
                 quote!(
                     match self {
                         #(#variant_hashes)*
